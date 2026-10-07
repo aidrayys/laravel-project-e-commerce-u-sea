@@ -12,6 +12,9 @@ class Order extends Model
         'customer_email',
         'customer_phone',
         'address',
+        'subtotal',
+        'shipping',
+        'discount_total',
         'total',
         'status',
     ];
@@ -19,6 +22,9 @@ class Order extends Model
     protected function casts(): array
     {
         return [
+            'subtotal' => 'integer',
+            'shipping' => 'integer',
+            'discount_total' => 'integer',
             'total' => 'integer',
         ];
     }

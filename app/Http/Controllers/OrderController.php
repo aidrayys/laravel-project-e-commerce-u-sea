@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +26,8 @@ class OrderController extends Controller
 
         $products = Product::whereIn('id', array_keys($cart))->get()->keyBy('id');
         $items = [];
-        $total = 0;
+        $subtotal = 0;
+        $discountTotal = 0;
 
         foreach ($cart as $id => $cartItem) {
             $product = $products->get($id);
@@ -34,16 +36,28 @@ class OrderController extends Controller
                 continue;
             }
 
+            $itemSubtotal = $cartItem['price'] * $cartItem['quantity'];
+            $itemOriginalSubtotal = ($cartItem['original_price'] ?? $cartItem['price']) * $cartItem['quantity'];
+
             $items[] = [
                 'product' => $product,
                 'quantity' => $cartItem['quantity'],
-                'subtotal' => $product->price * $cartItem['quantity'],
+                'price' => $cartItem['price'],
+                'original_price' => $cartItem['original_price'] ?? null,
+                'discount_percentage' => $cartItem['discount_percentage'] ?? null,
+                'weight' => $cartItem['weight'] ?? null,
+                'subtotal' => $itemSubtotal,
+                'saved' => max(0, $itemOriginalSubtotal - $itemSubtotal),
             ];
 
-            $total += $product->price * $cartItem['quantity'];
+            $subtotal += $itemSubtotal;
+            $discountTotal += max(0, $itemOriginalSubtotal - $itemSubtotal);
         }
 
-        return view('checkout', compact('items', 'total'));
+        $shipping = $subtotal >= 100000 ? 0 : 10000;
+        $total = $subtotal + $shipping;
+
+        return view('checkout', compact('items', 'subtotal', 'discountTotal', 'shipping', 'total'));
     }
 
     /**
@@ -53,7 +67,6 @@ class OrderController extends Controller
     {
         $validated = $request->validate([
             'customer_name' => 'required|string|max:255',
-            'customer_email' => 'required|email|max:255',
             'customer_phone' => 'required|string|max:255',
             'address' => 'required|string',
         ]);
@@ -74,27 +87,35 @@ class OrderController extends Controller
                 return redirect()->route('cart.index')->with('error', 'Produk tidak ditemukan.');
             }
 
-            if ($product->stock < $cartItem['quantity']) {
+            $stock = $cartItem['variant_id']
+                ? ProductVariant::where('id', $cartItem['variant_id'])->value('stock')
+                : $product->stock;
+
+            if ($stock < $cartItem['quantity']) {
                 return redirect()->route('cart.index')->with(
                     'error',
-                    "Stok {$product->name} tidak mencukupi. Stok tersedia: {$product->stock}."
+                    "Stok {$product->name} tidak mencukupi. Stok tersedia: {$stock}."
                 );
             }
         }
 
         $order = DB::transaction(function () use ($validated, $cart, $products) {
-            $total = 0;
+            $subtotal = 0;
 
             foreach ($cart as $id => $cartItem) {
-                $product = $products->get($id);
-                $total += $product->price * $cartItem['quantity'];
+                $subtotal += $cartItem['price'] * $cartItem['quantity'];
             }
+
+            $shipping = $subtotal >= 100000 ? 0 : 10000;
+            $total = $subtotal + $shipping;
 
             $order = Order::create([
                 'customer_name' => $validated['customer_name'],
-                'customer_email' => $validated['customer_email'],
                 'customer_phone' => $validated['customer_phone'],
                 'address' => $validated['address'],
+                'subtotal' => $subtotal,
+                'shipping' => $shipping,
+                'discount_total' => 0,
                 'total' => $total,
                 'status' => 'Pending',
             ]);
@@ -105,13 +126,19 @@ class OrderController extends Controller
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $product->id,
+                    'product_variant_id' => $cartItem['variant_id'] ?? null,
                     'product_name' => $product->name,
-                    'price' => $product->price,
+                    'weight' => $cartItem['weight'] ?? null,
+                    'price' => $cartItem['price'],
                     'quantity' => $cartItem['quantity'],
-                    'subtotal' => $product->price * $cartItem['quantity'],
+                    'subtotal' => $cartItem['price'] * $cartItem['quantity'],
                 ]);
 
-                $product->decrement('stock', $cartItem['quantity']);
+                if ($cartItem['variant_id']) {
+                    ProductVariant::where('id', $cartItem['variant_id'])->decrement('stock', $cartItem['quantity']);
+                } else {
+                    $product->decrement('stock', $cartItem['quantity']);
+                }
             }
 
             return $order;

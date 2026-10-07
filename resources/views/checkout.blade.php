@@ -33,16 +33,6 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="customer_email" class="form-label">Email</label>
-                    <input type="email"
-                           id="customer_email"
-                           name="customer_email"
-                           class="form-input"
-                           value="{{ old('customer_email') }}"
-                           required>
-                </div>
-
-                <div class="form-group">
                     <label for="customer_phone" class="form-label">Phone</label>
                     <input type="text"
                            id="customer_phone"
@@ -69,15 +59,47 @@
 
             @foreach ($items as $item)
                 <div class="summary-item">
-                    <div>
-                        <strong>{{ $item['product']->name }}</strong>
-                        <div style="font-size: 0.875rem; color: var(--gray);">
-                            {{ $item['quantity'] }} x Rp {{ number_format($item['product']->price, 0, ',', '.') }}
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <img src="{{ asset($item['product']->image) }}"
+                             alt="{{ $item['product']->name }}"
+                             style="width: 50px; height: 50px; object-fit: cover; border-radius: 0.5rem;"
+                             onerror="this.onerror=null;this.src='{{ asset('images/placeholder.svg') }}'">
+                        <div>
+                            <strong>{{ $item['product']->name }}</strong>
+                            <div style="font-size: 0.8rem; color: var(--gray);">
+                                {{ $item['product']->seller_name }}
+                                @if ($item['weight'])
+                                    · {{ $item['weight'] }}
+                                @endif
+                            </div>
+                            <div style="font-size: 0.8rem; color: var(--gray);">
+                                {{ $item['quantity'] }} x Rp {{ number_format($item['price'], 0, ',', '.') }}
+                            </div>
                         </div>
                     </div>
-                    <div>Rp {{ number_format($item['subtotal'], 0, ',', '.') }}</div>
+                    <div style="text-align: right;">
+                        <div>Rp {{ number_format($item['subtotal'], 0, ',', '.') }}</div>
+                        @if ($item['saved'] > 0)
+                            <div style="font-size: 0.75rem; color: var(--success);">Save Rp {{ number_format($item['saved'], 0, ',', '.') }}</div>
+                        @endif
+                    </div>
                 </div>
             @endforeach
+
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem; font-size: 0.95rem;">
+                <span style="color: var(--gray);">Subtotal</span>
+                <span>Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
+            </div>
+            @if ($discountTotal > 0)
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem; font-size: 0.95rem; color: var(--success);">
+                    <span>Discount</span>
+                    <span>-Rp {{ number_format($discountTotal, 0, ',', '.') }}</span>
+                </div>
+            @endif
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem; font-size: 0.95rem;">
+                <span style="color: var(--gray);">Shipping</span>
+                <span>{{ $shipping === 0 ? 'FREE' : 'Rp ' . number_format($shipping, 0, ',', '.') }}</span>
+            </div>
 
             <div class="summary-total">
                 <span>Grand Total</span>

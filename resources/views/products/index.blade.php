@@ -9,7 +9,7 @@
         <input type="text"
                name="search"
                class="form-input"
-               placeholder="Search seafood or seller..."
+               placeholder="Search seafood, UMKM, or fisherman..."
                value="{{ request('search') }}">
 
         <select name="category" class="form-select" onchange="this.form.submit()">
@@ -23,6 +23,17 @@
 
         <button type="submit" class="btn btn-primary">Search</button>
     </form>
+
+    <div class="category-scroll" style="margin-bottom: 1.5rem;">
+        <a href="{{ route('products.index', array_merge(request()->except('category', 'page'), ['category' => null])) }}" class="category-chip {{ request('category') ? '' : 'active' }}">
+            All
+        </a>
+        @foreach ($categories as $category)
+            <a href="{{ route('products.index', array_merge(request()->except('category', 'page'), ['category' => $category])) }}" class="category-chip {{ request('category') == $category ? 'active' : '' }}">
+                {{ $category }}
+            </a>
+        @endforeach
+    </div>
 
     @if ($products->isEmpty())
         <div class="empty-state">
