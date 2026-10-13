@@ -20,7 +20,7 @@ class MarketplaceFlowTest extends TestCase
         $response = $this->get('/');
         $response->assertStatus(200)
                  ->assertSee('Belanja dari Laut')
-                 ->assertSee('Fresh From The Sea');
+                 ->assertSee('Yuk Pilih Ikan Segarmu!');
     }
 
     public function test_products_page_loads_and_filters(): void

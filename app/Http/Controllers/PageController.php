@@ -12,7 +12,7 @@ class PageController extends Controller
      */
     public function home(): View
     {
-        $products = Product::limit(8)->get();
+        $products = Product::with('variants')->get();
         $categories = Product::select('category')->distinct()->pluck('category');
 
         return view('home', compact('products', 'categories'));

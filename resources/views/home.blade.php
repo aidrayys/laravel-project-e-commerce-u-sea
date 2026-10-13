@@ -89,41 +89,6 @@
         </div>
     </section>
 
-    {{-- Value Proposition --}}
-    <section class="section">
-        <h2 class="section-title">Kenapa Belanja di U-Sea?</h2>
-        <div class="value-grid">
-            <div class="value-card">
-                <div class="value-icon">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor"/></svg>
-                </div>
-                <h3>Support Local Fishermen</h3>
-                <p>Setiap pembelian membantu menghubungkan hasil laut nelayan dengan pelanggan.</p>
-            </div>
-            <div class="value-card">
-                <div class="value-icon">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c4.97 0 9-4.03 9-9-4.5 0-9-9-9-9s-4.5 9-9 9c0 4.97 4.03 9 9 9z" fill="currentColor"/></svg>
-                </div>
-                <h3>Fresh from the Sea</h3>
-                <p>Pilihan seafood segar dan berkualitas dari pesisir Indonesia.</p>
-            </div>
-            <div class="value-card">
-                <div class="value-icon">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.89 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z" fill="currentColor"/></svg>
-                </div>
-                <h3>Harga Terjangkau</h3>
-                <p>Belanja produk laut dari nelayan dan UMKM lokal.</p>
-            </div>
-            <div class="value-card">
-                <div class="value-icon">
-                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 9h-2v-2h2v2zm0 4h-2v-2h2v2zm0 4h-2v-2h2v2zM20 3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H4V5h16v14zM7 7h5v2H7V7zm0 4h5v2H7v-2zm0 4h5v2H7v-2z" fill="currentColor"/></svg>
-                </div>
-                <h3>Gratis Ongkir</h3>
-                <p>Nikmati promo gratis ongkir untuk pesanan tertentu.</p>
-            </div>
-        </div>
-    </section>
-
     {{-- Promo Section --}}
     <section class="section">
         <h2 class="section-title">Promo Hari Ini</h2>
@@ -159,32 +124,20 @@
         </div>
     </section>
 
-    {{-- Category Section --}}
-    <section class="section">
-        <h2 class="section-title">Belanja Berdasarkan Kategori</h2>
-        <div class="category-scroll">
-            <a href="{{ route('products.index') }}" class="category-chip {{ request('category') ? '' : 'active' }}">
+    {{-- Products Section: heading, category filters, and product cards in one section --}}
+    <section class="section" id="products-section">
+        <h2 class="section-title">Yuk Pilih Ikan Segarmu!</h2>
+
+        <div class="category-scroll" id="homeCategoryFilters" style="margin-bottom: 1.5rem;">
+            <button type="button" class="category-chip active" data-category="all">
                 <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="currentColor"/></svg>
                 All
-            </a>
+            </button>
             @foreach ($categories as $category)
-                <a href="{{ route('products.index', ['category' => $category]) }}" class="category-chip {{ request('category') == $category ? 'active' : '' }}">
+                <button type="button" class="category-chip" data-category="{{ $category }}">
                     {{ $category }}
-                </a>
+                </button>
             @endforeach
-            <a href="{{ route('products.index', ['search' => 'Fish']) }}" class="category-chip">Fish</a>
-            <a href="{{ route('products.index', ['search' => 'Shrimp']) }}" class="category-chip">Shrimp</a>
-            <a href="{{ route('products.index', ['search' => 'Squid']) }}" class="category-chip">Squid</a>
-            <a href="{{ route('products.index', ['search' => 'Sambal']) }}" class="category-chip">Sambal</a>
-            <a href="{{ route('products.index', ['search' => 'Seafood Snacks']) }}" class="category-chip">Seafood Snacks</a>
-        </div>
-    </section>
-
-    {{-- Featured Products --}}
-    <section class="section">
-        <div class="section-header">
-            <h2 class="section-title" style="margin-bottom: 0;">Fresh From The Sea</h2>
-            <a href="{{ route('products.index') }}">Lihat Semua &rarr;</a>
         </div>
 
         @if ($products->isEmpty())
@@ -193,12 +146,47 @@
                 <p>Produk akan segera tersedia.</p>
             </div>
         @else
-            <div class="product-grid">
+            <div class="product-grid" id="homeProductGrid">
                 @foreach ($products as $product)
                     @include('products.card', ['product' => $product])
                 @endforeach
             </div>
         @endif
+    </section>
+
+    {{-- Value Proposition --}}
+    <section class="section">
+        <h2 class="section-title">Kenapa Belanja di U-Sea?</h2>
+        <div class="value-grid">
+            <div class="value-card">
+                <div class="value-icon">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor"/></svg>
+                </div>
+                <h3>Support Local Fishermen</h3>
+                <p>Setiap pembelian membantu menghubungkan hasil laut nelayan dengan pelanggan.</p>
+            </div>
+            <div class="value-card">
+                <div class="value-icon">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 22c4.97 0 9-4.03 9-9-4.5 0-9-9-9-9s-4.5 9-9 9c0 4.97 4.03 9 9 9z" fill="currentColor"/></svg>
+                </div>
+                <h3>Fresh from the Sea</h3>
+                <p>Pilihan seafood segar dan berkualitas dari pesisir Indonesia.</p>
+            </div>
+            <div class="value-card">
+                <div class="value-icon">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.89 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z" fill="currentColor"/></svg>
+                </div>
+                <h3>Harga Terjangkau</h3>
+                <p>Belanja produk laut dari nelayan dan UMKM lokal.</p>
+            </div>
+            <div class="value-card">
+                <div class="value-icon">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 9h-2v-2h2v2zm0 4h-2v-2h2v2zm0 4h-2v-2h2v2zM20 3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H4V5h16v14zM7 7h5v2H7V7zm0 4h5v2H7v-2zm0 4h5v2H7v-2z" fill="currentColor"/></svg>
+                </div>
+                <h3>Gratis Ongkir</h3>
+                <p>Nikmati promo gratis ongkir untuk pesanan tertentu.</p>
+            </div>
+        </div>
     </section>
 
     {{-- Support Local Fishermen Story --}}
@@ -229,3 +217,29 @@
         </div>
     </section>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const filterContainer = document.getElementById('homeCategoryFilters');
+        if (!filterContainer) return;
+
+        const buttons = filterContainer.querySelectorAll('.category-chip');
+        const cards = document.querySelectorAll('#homeProductGrid .card');
+
+        buttons.forEach(button => {
+            button.addEventListener('click', function () {
+                const selectedCategory = this.dataset.category;
+
+                buttons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+
+                cards.forEach(card => {
+                    const cardCategory = card.dataset.category;
+                    card.style.display = (selectedCategory === 'all' || cardCategory === selectedCategory) ? '' : 'none';
+                });
+            });
+        });
+    });
+</script>
+@endpush

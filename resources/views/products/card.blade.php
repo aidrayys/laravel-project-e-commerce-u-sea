@@ -1,4 +1,4 @@
-<article class="card">
+<article class="card" data-category="{{ $product->category }}">
     <a href="{{ route('products.show', $product) }}" class="card-image-wrapper">
         <img src="{{ asset($product->image) }}"
              alt="{{ $product->name }}"
