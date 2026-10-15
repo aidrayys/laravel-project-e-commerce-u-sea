@@ -29,7 +29,7 @@ class ProductController extends Controller
             $query->where('category', $category);
         }
 
-        $products = $query->get();
+        $products = $query->paginate(12)->withQueryString();
         $categories = Product::select('category')->distinct()->pluck('category');
 
         return view('products.index', compact('products', 'categories'));

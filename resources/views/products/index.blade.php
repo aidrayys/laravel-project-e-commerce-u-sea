@@ -47,5 +47,9 @@
                 @include('products.card', ['product' => $product])
             @endforeach
         </div>
+
+        <div class="pagination-wrapper" style="margin-top: 2rem;">
+            {{ $products->links('vendor.pagination.usea') }}
+        </div>
     @endif
 @endsection
