@@ -115,5 +115,10 @@
 
             <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
         </form>
+
+        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--seafoam); text-align: center;">
+            <p style="color: var(--gray); font-size: 0.875rem; margin: 0 0 0.75rem;">Belanja sebagai pelanggan?</p>
+            <a href="{{ route('register') }}" class="btn btn-outline" style="width: 100%;">Daftar akun pelanggan</a>
+        </div>
     </div>
 @endsection

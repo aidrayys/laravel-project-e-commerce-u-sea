@@ -3,6 +3,7 @@
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SellerAuthController;
 use App\Http\Controllers\SellerDashboardController;
 use App\Http\Controllers\SellerProductController;
@@ -37,3 +38,16 @@ Route::delete('/cart/remove/{product}', [ProductController::class, 'removeFromCa
 Route::get('/checkout', [OrderController::class, 'checkout'])->name('checkout.index');
 Route::post('/checkout', [OrderController::class, 'store'])->name('checkout.store');
 Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+
+// Breeze customer authentication routes
+Route::get('/dashboard', function () {
+    return redirect()->route('home');
+})->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+require __DIR__.'/auth.php';
