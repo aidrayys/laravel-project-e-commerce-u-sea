@@ -35,6 +35,98 @@
         }
     }
 
+    .summary-card.clickable {
+        cursor: pointer;
+        position: relative;
+    }
+
+    .summary-card.clickable::after {
+        content: 'Lihat detail';
+        position: absolute;
+        bottom: 1.25rem;
+        right: 1.25rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: var(--ocean);
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+
+    .summary-card.clickable:hover::after {
+        opacity: 1;
+    }
+
+    .summary-card.clickable:hover {
+        border-color: var(--ocean);
+        box-shadow: 0 0 0 3px rgba(8, 126, 164, 0.12);
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .modal-header h2 {
+        font-size: 1.125rem;
+        font-weight: 800;
+        color: var(--navy);
+        margin: 0;
+    }
+
+    .modal-sidebar {
+        max-width: 560px;
+    }
+
+    .modal-list-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .modal-list-item:last-child {
+        border-bottom: none;
+    }
+
+    .modal-list-item img {
+        width: 48px;
+        height: 48px;
+        object-fit: cover;
+        border-radius: var(--radius);
+        background-color: #e0f2fe;
+        flex-shrink: 0;
+    }
+
+    .modal-list-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .modal-list-title {
+        font-weight: 700;
+        color: var(--navy);
+        margin-bottom: 0.25rem;
+    }
+
+    .modal-list-meta {
+        font-size: 0.8rem;
+        color: var(--gray);
+    }
+
+    .modal-list-badge {
+        background-color: var(--light-blue);
+        color: var(--ocean);
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 0.375rem 0.75rem;
+        border-radius: 9999px;
+        white-space: nowrap;
+    }
+
     .summary-card {
         background-color: var(--white);
         border-radius: var(--radius-lg);
@@ -515,22 +607,18 @@
         <div class="summary-card">
             <div class="summary-label">Total Sales</div>
             <div class="summary-value">Rp {{ number_format($summary['total_sales'], 0, ',', '.') }}</div>
-            <span class="summary-change up">▲ +{{ $summary['sales_growth'] }}% vs last month</span>
         </div>
-        <div class="summary-card">
+        <div class="summary-card clickable" onclick="openModal('ordersModal')">
             <div class="summary-label">Total Orders</div>
             <div class="summary-value">{{ number_format($summary['total_orders'], 0, ',', '.') }}</div>
-            <span class="summary-change up">▲ +{{ $summary['orders_growth'] }}% vs last month</span>
         </div>
-        <div class="summary-card">
-            <div class="summary-label">Total Products</div>
-            <div class="summary-value">{{ $summary['total_products'] }}</div>
-            <span class="summary-change up">▲ +{{ $summary['new_products'] }} new product</span>
+        <div class="summary-card clickable" onclick="openModal('clicksModal')">
+            <div class="summary-label">Total Product Clicks</div>
+            <div class="summary-value">{{ number_format($summary['total_product_clicks'], 0, ',', '.') }}</div>
         </div>
         <div class="summary-card">
             <div class="summary-label">Average Order Value</div>
             <div class="summary-value">Rp {{ number_format($summary['average_order_value'], 0, ',', '.') }}</div>
-            <span class="summary-change up">▲ +{{ $summary['aov_growth'] }}% vs last month</span>
         </div>
     </div>
 
@@ -542,8 +630,6 @@
                     <h2>Sales Performance</h2>
                     <div class="chart-tabs">
                         <button type="button" class="chart-tab active" data-period="7_days">7 Days</button>
-                        <button type="button" class="chart-tab" data-period="4_weeks">4 Weeks</button>
-                        <button type="button" class="chart-tab" data-period="6_months">6 Months</button>
                     </div>
                 </div>
                 <div class="chart-wrapper">
@@ -561,15 +647,15 @@
                 <ul class="insight-list">
                     <li>
                         <span class="insight-bullet">1</span>
-                        <span>Penjualan menunjukkan <strong>tren meningkat</strong> dari Senin ke Minggu.</span>
+                        <span>Ringkasan penjualan dihitung dari <strong>data order aktual</strong> di database.</span>
                     </li>
                     <li>
                         <span class="insight-bullet">2</span>
-                        <span><strong>Minggu</strong> menjadi hari dengan penjualan tertinggi, sementara <strong>Rabu</strong> terendah.</span>
+                        <span>Klik produk dicatat satu kali per sesi pengguna saat membuka halaman detail.</span>
                     </li>
                     <li>
                         <span class="insight-bullet">3</span>
-                        <span><strong>Fresh Snapper</strong> menyumbang penjualan terbesar minggu ini.</span>
+                        <span>Produk dengan stok ≤ 5 akan muncul di bagian <strong>Perlu Perhatian</strong>.</span>
                     </li>
                 </ul>
             </div>
@@ -723,6 +809,61 @@
             </div>
         </div>
     </div>
+
+    {{-- Modal: Product Clicks Detail --}}
+    <div class="modal-overlay" id="clicksModal" role="dialog" aria-modal="true" aria-labelledby="clicksModalTitle" onclick="closeModalOnOverlay(event, 'clicksModal')">
+        <div class="modal modal-sidebar" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 id="clicksModalTitle">Detail Product Clicks</h2>
+                <button type="button" class="modal-close" onclick="closeModal('clicksModal')" aria-label="Close modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                @forelse ($clickedProducts as $product)
+                    <div class="modal-list-item">
+                        <img src="{{ asset($product['image'] ?? 'images/placeholder.svg') }}" alt="{{ $product['name'] }}" onerror="this.onerror=null;this.src='{{ asset('images/placeholder.svg') }}'">
+                        <div class="modal-list-info">
+                            <div class="modal-list-title">{{ $product['name'] }}</div>
+                            <div class="modal-list-meta">{{ $product['category'] }}</div>
+                        </div>
+                        <div class="modal-list-badge">{{ number_format($product['clicks'], 0, ',', '.') }} klik</div>
+                    </div>
+                @empty
+                    <div class="empty-state" style="padding: 2rem 1rem;">
+                        <p style="color: var(--gray);">Belum ada produk yang diklik.</p>
+                    </div>
+                @endforelse
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal: Orders Detail --}}
+    <div class="modal-overlay" id="ordersModal" role="dialog" aria-modal="true" aria-labelledby="ordersModalTitle" onclick="closeModalOnOverlay(event, 'ordersModal')">
+        <div class="modal modal-sidebar" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2 id="ordersModalTitle">Detail Orders</h2>
+                <button type="button" class="modal-close" onclick="closeModal('ordersModal')" aria-label="Close modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                @forelse ($recentOrdersList as $order)
+                    <div class="modal-list-item">
+                        <div class="modal-list-info" style="flex: 1;">
+                            <div class="modal-list-title">{{ $order['order'] }}</div>
+                            <div class="modal-list-meta">{{ $order['customer'] }} · {{ $order['city'] }}</div>
+                            <div class="modal-list-meta">{{ $order['date'] }} · {{ $order['product'] }}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="modal-list-badge">Rp {{ number_format($order['total'], 0, ',', '.') }}</div>
+                            <div style="font-size: 0.75rem; color: var(--gray); margin-top: 0.25rem;">{{ $order['status'] }}</div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="empty-state" style="padding: 2rem 1rem;">
+                        <p style="color: var(--gray);">Belum ada order.</p>
+                    </div>
+                @endforelse
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -787,5 +928,35 @@
     });
 
     renderChart('7_days');
+
+    // Modal functions
+    function openModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+    }
+
+    function closeModalOnOverlay(event, modalId) {
+        if (event.target.id === modalId) {
+            closeModal(modalId);
+        }
+    }
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            closeModal('clicksModal');
+            closeModal('ordersModal');
+        }
+    });
 </script>
 @endpush

@@ -2,45 +2,133 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\Product;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class SellerDashboardController extends Controller
 {
     public function index(): View
     {
-        $summary = [
-            'total_sales' => 12850000,
-            'sales_growth' => 12.5,
-            'total_orders' => 186,
-            'orders_growth' => 8.3,
-            'total_products' => 5,
-            'new_products' => 1,
-            'average_order_value' => 69086,
-            'aov_growth' => 4.2,
-        ];
+        // KPIs from actual database
+        $totalProductClicks = Product::sum('clicks');
+        $totalOrders = Order::count();
+        $totalSales = Order::sum('total') ?? 0;
+        $averageOrderValue = (int) (Order::avg('total') ?? 0);
+
+        // Products with clicks detail
+        $clickedProducts = Product::where('clicks', '>', 0)
+            ->orderByDesc('clicks')
+            ->limit(50)
+            ->get(['id', 'name', 'category', 'clicks', 'image'])
+            ->toArray();
+
+        // Recent orders for modal
+        $recentOrdersList = Order::with('orderItems.product')
+            ->latest()
+            ->limit(50)
+            ->get()
+            ->map(function ($order) {
+                $firstItem = $order->orderItems->first();
+
+                return [
+                    'order' => $order->order_number,
+                    'customer' => $order->customer_name,
+                    'city' => $this->guessCity($order->address),
+                    'product' => $firstItem?->product_name ?? '-',
+                    'total' => $order->total,
+                    'status' => $order->status,
+                    'date' => $order->created_at->format('d M Y H:i'),
+                ];
+            })
+            ->toArray();
+
+        // Sales performance for the last 7 days
+        $startDate = Carbon::now()->subDays(6)->startOfDay();
+        $endDate = Carbon::now()->endOfDay();
+        $orderTotalsByDay = Order::select(
+            DB::raw('DATE(created_at) as date'),
+            DB::raw('SUM(total) as total')
+        )
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->groupBy('date')
+            ->orderBy('date')
+            ->pluck('total', 'date')
+            ->toArray();
+
+        $labels = [];
+        $values = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = Carbon::now()->subDays($i)->format('Y-m-d');
+            $labels[] = Carbon::parse($date)->format('D');
+            $values[] = (int) ($orderTotalsByDay[$date] ?? 0);
+        }
 
         $salesData = [
             '7_days' => [
-                'labels' => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                'values' => [1200000, 1500000, 1100000, 1800000, 2000000, 2400000, 2800000],
-            ],
-            '4_weeks' => [
-                'labels' => ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
-                'values' => [11500000, 6200000, 10100000, 12850000],
-            ],
-            '6_months' => [
-                'labels' => ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
-                'values' => [10500000, 4200000, 7800000, 12100000, 6500000, 12850000],
+                'labels' => $labels,
+                'values' => $values,
             ],
         ];
 
-        $topProducts = [
-            ['name' => 'Fresh Snapper', 'sold' => 32, 'revenue' => 2240000],
-            ['name' => 'Fresh Squid', 'sold' => 27, 'revenue' => 2025000],
-            ['name' => 'Spicy Squid Sambal', 'sold' => 24, 'revenue' => 840000],
-            ['name' => 'Fresh Tuna', 'sold' => 21, 'revenue' => 1785000],
+        // Top products by sold quantity
+        $topProducts = OrderItem::select(
+            'product_name',
+            DB::raw('SUM(quantity) as sold'),
+            DB::raw('SUM(subtotal) as revenue')
+        )
+            ->groupBy('product_name')
+            ->orderByDesc('sold')
+            ->limit(5)
+            ->get()
+            ->map(fn ($item) => [
+                'name' => $item->product_name,
+                'sold' => (int) $item->sold,
+                'revenue' => (int) $item->revenue,
+            ])
+            ->toArray();
+
+        // Recent orders table
+        $recentOrders = Order::with('orderItems.product')
+            ->latest()
+            ->limit(5)
+            ->get()
+            ->map(function ($order) {
+                $firstItem = $order->orderItems->first();
+
+                return [
+                    'order' => $order->order_number,
+                    'customer' => $order->customer_name,
+                    'city' => $this->guessCity($order->address),
+                    'product' => $firstItem?->product_name ?? '-',
+                    'total' => $order->total,
+                    'status' => $order->status,
+                ];
+            })
+            ->toArray();
+
+        // Stock alerts: products with low stock
+        $stockAlerts = Product::where('stock', '<=', 5)
+            ->orderBy('stock')
+            ->limit(5)
+            ->get()
+            ->map(fn ($product) => [
+                'name' => $product->name,
+                'stock' => $product->stock,
+            ])
+            ->toArray();
+
+        $summary = [
+            'total_sales' => $totalSales,
+            'total_orders' => $totalOrders,
+            'total_product_clicks' => $totalProductClicks,
+            'average_order_value' => $averageOrderValue,
         ];
 
+        // Placeholder analytics; city-level segmentation is not modelled
         $customerCities = [
             ['city' => 'Surabaya', 'percentage' => 42],
             ['city' => 'Lamongan', 'percentage' => 24],
@@ -50,26 +138,15 @@ class SellerDashboardController extends Controller
         ];
 
         $customerStats = [
-            'total' => 128,
-            'new' => 34,
-            'returning' => 94,
-        ];
-
-        $recentOrders = [
-            ['order' => '#USEA001', 'customer' => 'Caca Sea', 'city' => 'Surabaya', 'product' => 'Fresh Snapper', 'total' => 140000, 'status' => 'Completed'],
-            ['order' => '#USEA002', 'customer' => 'Budi Nelayan', 'city' => 'Lamongan', 'product' => 'Fresh Squid', 'total' => 150000, 'status' => 'Processing'],
-            ['order' => '#USEA003', 'customer' => 'Dewi Ocean', 'city' => 'Gresik', 'product' => 'Spicy Squid Sambal', 'total' => 70000, 'status' => 'Pending Payment'],
-            ['order' => '#USEA004', 'customer' => 'Rina Pesisir', 'city' => 'Surabaya', 'product' => 'Fresh Tuna', 'total' => 170000, 'status' => 'Completed'],
-            ['order' => '#USEA005', 'customer' => 'Ari Bahari', 'city' => 'Sidoarjo', 'product' => 'Fresh Snapper', 'total' => 140000, 'status' => 'Completed'],
-        ];
-
-        $stockAlerts = [
-            ['name' => 'Fresh Squid', 'stock' => 4],
-            ['name' => 'Spicy Squid Sambal', 'stock' => 6],
+            'total' => Order::distinct('customer_name')->count('customer_name'),
+            'new' => 0,
+            'returning' => 0,
         ];
 
         return view('seller.dashboard', compact(
             'summary',
+            'clickedProducts',
+            'recentOrdersList',
             'salesData',
             'topProducts',
             'customerCities',
@@ -77,5 +154,26 @@ class SellerDashboardController extends Controller
             'recentOrders',
             'stockAlerts'
         ));
+    }
+
+    /**
+     * Best-effort city extraction from a free-text address.
+     * This is intentionally simple because the address is stored as plain text.
+     */
+    private function guessCity(?string $address): string
+    {
+        if (empty($address)) {
+            return 'Unknown';
+        }
+
+        $cities = ['Surabaya', 'Lamongan', 'Gresik', 'Sidoarjo', 'Madura', 'Pasuruan'];
+        $lowerAddress = strtolower($address);
+        foreach ($cities as $city) {
+            if (str_contains($lowerAddress, strtolower($city))) {
+                return $city;
+            }
+        }
+
+        return 'Other';
     }
 }

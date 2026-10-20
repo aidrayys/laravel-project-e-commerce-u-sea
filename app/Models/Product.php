@@ -22,6 +22,7 @@ class Product extends Model
         'seller_name',
         'location',
         'rating',
+        'clicks',
     ];
 
     protected function casts(): array
@@ -32,6 +33,7 @@ class Product extends Model
             'discount_percentage' => 'integer',
             'is_promo' => 'boolean',
             'stock' => 'integer',
+            'clicks' => 'integer',
         ];
     }
 

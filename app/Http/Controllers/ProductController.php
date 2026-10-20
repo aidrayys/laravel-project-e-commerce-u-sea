@@ -36,10 +36,17 @@ class ProductController extends Controller
     }
 
     /**
-     * Tampilkan detail produk.
+     * Tampilkan detail produk dan catat klik (satu kali per sesi per produk).
      */
     public function show(Product $product): View
     {
+        $clickedKey = "product_clicked_{$product->id}";
+
+        if (! session()->has($clickedKey)) {
+            $product->increment('clicks');
+            session()->put($clickedKey, true);
+        }
+
         return view('products.show', compact('product'));
     }
 
