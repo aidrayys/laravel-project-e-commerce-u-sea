@@ -57,7 +57,20 @@ class OrderController extends Controller
         $shipping = $subtotal >= 100000 ? 0 : 10000;
         $total = $subtotal + $shipping;
 
-        return view('checkout', compact('items', 'subtotal', 'discountTotal', 'shipping', 'total'));
+        /** @var \App\Models\User $user */
+        $user = auth()->user();
+        $customerDefaults = [
+            'customer_name' => $user->name,
+            'customer_email' => $user->email,
+            'customer_phone' => old('customer_phone', $user->phone ?? ''),
+            'customer_city' => old('customer_city', $user->city ?? ''),
+            'address' => old('address', $user->address ?? ''),
+        ];
+
+        return view('checkout', array_merge(
+            compact('items', 'subtotal', 'discountTotal', 'shipping', 'total'),
+            $customerDefaults
+        ));
     }
 
     /**
@@ -67,7 +80,9 @@ class OrderController extends Controller
     {
         $validated = $request->validate([
             'customer_name' => 'required|string|max:255',
+            'customer_email' => 'required|email|max:255',
             'customer_phone' => 'required|string|max:255',
+            'customer_city' => 'nullable|string|max:255',
             'address' => 'required|string',
         ]);
 
@@ -110,9 +125,12 @@ class OrderController extends Controller
             $total = $subtotal + $shipping;
 
             $order = Order::create([
+                'user_id' => auth()->id(),
                 'customer_name' => $validated['customer_name'],
+                'customer_email' => $validated['customer_email'],
                 'customer_phone' => $validated['customer_phone'],
                 'address' => $validated['address'],
+                'city' => $validated['customer_city'] ?? null,
                 'subtotal' => $subtotal,
                 'shipping' => $shipping,
                 'discount_total' => 0,
@@ -144,6 +162,14 @@ class OrderController extends Controller
             return $order;
         });
 
+        // Create initial tracking event
+        $order->trackingEvents()->create([
+            'status' => $order->status,
+            'title' => 'Pesanan dibuat',
+            'description' => 'Pesanan berhasil dibuat dan menunggu konfirmasi.',
+            'event_at' => now(),
+        ]);
+
         session()->forget('cart');
 
         return redirect()->route('orders.show', $order)->with('success', 'Pesanan berhasil dibuat.');
@@ -154,8 +180,46 @@ class OrderController extends Controller
      */
     public function show(Order $order): View
     {
+        $this->authorizeOrder($order);
+
         $order->load('orderItems.product');
 
         return view('orders.show', compact('order'));
+    }
+
+    /**
+     * Tampilkan daftar pesanan customer yang sedang login.
+     */
+    public function myOrders(Request $request): View
+    {
+        $query = Order::with('orderItems.product')
+            ->where('user_id', auth()->id());
+
+        $status = $request->input('status');
+        if ($status && $status !== 'all') {
+            $query->where('status', $status);
+        }
+
+        $orders = $query->latest()->paginate(10)->withQueryString();
+
+        return view('orders.my', compact('orders'));
+    }
+
+    /**
+     * Pastikan user hanya dapat melihat pesanan miliknya sendiri
+     * kecuali admin.
+     */
+    private function authorizeOrder(Order $order): void
+    {
+        /** @var \App\Models\User|null $user */
+        $user = auth()->user();
+
+        if ($user && $user->isAdmin()) {
+            return;
+        }
+
+        if ($order->user_id !== auth()->id()) {
+            abort(403, 'Anda tidak memiliki akses ke pesanan ini.');
+        }
     }
 }

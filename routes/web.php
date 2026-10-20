@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProductController;
@@ -13,6 +14,11 @@ use Illuminate\Support\Facades\Route;
 // Halaman statis
 Route::get('/', [PageController::class, 'home'])->name('home');
 Route::get('/about', [PageController::class, 'about'])->name('about');
+
+// Admin area
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+});
 
 // Produk (customer-facing)
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
@@ -36,10 +42,13 @@ Route::post('/cart/add/{product}', [ProductController::class, 'addToCart'])->nam
 Route::patch('/cart/update/{product}', [ProductController::class, 'updateCart'])->name('cart.update');
 Route::delete('/cart/remove/{product}', [ProductController::class, 'removeFromCart'])->name('cart.remove');
 
-// Checkout & pesanan
-Route::get('/checkout', [OrderController::class, 'checkout'])->name('checkout.index');
-Route::post('/checkout', [OrderController::class, 'store'])->name('checkout.store');
-Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+// Checkout & pesanan (memerlukan autentikasi customer)
+Route::middleware('auth')->group(function () {
+    Route::get('/checkout', [OrderController::class, 'checkout'])->name('checkout.index');
+    Route::post('/checkout', [OrderController::class, 'store'])->name('checkout.store');
+    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+    Route::get('/my-orders', [OrderController::class, 'myOrders'])->name('orders.my');
+});
 
 // Breeze customer authentication routes
 Route::get('/dashboard', function () {

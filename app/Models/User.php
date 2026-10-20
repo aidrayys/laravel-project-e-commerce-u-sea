@@ -21,6 +21,10 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'role',
+        'phone',
+        'address',
+        'city',
         'password',
     ];
 
@@ -45,5 +49,29 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Determine if the user has the admin role.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    /**
+     * Determine if the user has the seller role.
+     */
+    public function isSeller(): bool
+    {
+        return $this->role === 'seller';
+    }
+
+    /**
+     * Determine if the user is a customer.
+     */
+    public function isCustomer(): bool
+    {
+        return $this->role === 'customer';
     }
 }

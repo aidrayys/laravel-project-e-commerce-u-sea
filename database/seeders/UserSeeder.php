@@ -18,16 +18,19 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Admin U-Sea',
                 'email' => 'admin@usea.test',
+                'role' => 'admin',
                 'password' => Hash::make('password'),
             ],
             [
                 'name' => 'John Doe',
                 'email' => 'john@example.com',
+                'role' => 'customer',
                 'password' => Hash::make('password'),
             ],
             [
                 'name' => 'Jane Smith',
                 'email' => 'jane@example.com',
+                'role' => 'customer',
                 'password' => Hash::make('password'),
             ],
         ];
