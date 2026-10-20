@@ -80,9 +80,37 @@
                         </button>
                     </form>
                 </li>
+            @elseif (auth()->check())
+                <li>
+                    <a href="{{ route('orders.my') }}">
+                        <svg class="nav-link-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path d="M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l3.59-3.58L17 12l-5 5z" fill="currentColor"/>
+                        </svg>
+                        <span>Pesanan Saya</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ route('profile.edit') }}">
+                        <svg class="nav-link-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" fill="currentColor"/>
+                        </svg>
+                        <span>Profil</span>
+                    </a>
+                </li>
+                <li>
+                    <form action="{{ route('logout') }}" method="POST" style="display: contents;">
+                        @csrf
+                        <button type="submit">
+                            <svg class="nav-link-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z" fill="currentColor"/>
+                            </svg>
+                            <span>Logout</span>
+                        </button>
+                    </form>
+                </li>
             @else
                 <li>
-                    <a href="{{ route('seller.login') }}">
+                    <a href="{{ route('login') }}">
                         <svg class="nav-link-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                             <path d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" fill="currentColor"/>
                         </svg>

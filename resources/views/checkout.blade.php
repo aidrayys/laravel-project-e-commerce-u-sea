@@ -28,7 +28,17 @@
                            id="customer_name"
                            name="customer_name"
                            class="form-input"
-                           value="{{ old('customer_name') }}"
+                           value="{{ old('customer_name', $customer_name ?? '') }}"
+                           required>
+                </div>
+
+                <div class="form-group">
+                    <label for="customer_email" class="form-label">Email</label>
+                    <input type="email"
+                           id="customer_email"
+                           name="customer_email"
+                           class="form-input"
+                           value="{{ old('customer_email', $customer_email ?? '') }}"
                            required>
                 </div>
 
@@ -38,8 +48,18 @@
                            id="customer_phone"
                            name="customer_phone"
                            class="form-input"
-                           value="{{ old('customer_phone') }}"
+                           value="{{ old('customer_phone', $customer_phone ?? '') }}"
                            required>
+                </div>
+
+                <div class="form-group">
+                    <label for="customer_city" class="form-label">Kota / Kabupaten</label>
+                    <input type="text"
+                           id="customer_city"
+                           name="customer_city"
+                           class="form-input"
+                           value="{{ old('customer_city', $customer_city ?? auth()->user()->city ?? '') }}"
+                           placeholder="Contoh: Surabaya">
                 </div>
 
                 <div class="form-group">
@@ -47,7 +67,7 @@
                     <textarea id="address"
                               name="address"
                               class="form-textarea"
-                              required>{{ old('address') }}</textarea>
+                              required>{{ old('address', $address ?? '') }}</textarea>
                 </div>
 
                 <button type="submit" class="btn btn-primary" style="width: 100%;">Place Order</button>

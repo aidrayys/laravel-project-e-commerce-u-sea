@@ -50,6 +50,13 @@
                 <span>{{ __('Belum punya akun?') }}</span>
                 <button type="button" onclick="switchAuthMode('register')">{{ __('Daftar') }}</button>
             </div>
+
+            <div class="auth-seller-link" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; text-align: center;">
+                <span style="font-size: 0.875rem; color: var(--gray);">Masuk sebagai penjual?</span>
+                <a href="{{ route('seller.login') }}" class="btn btn-outline btn-small" style="width: 100%; margin-top: 0.5rem;">
+                    Login Seller Center
+                </a>
+            </div>
         </form>
     </div>
 
