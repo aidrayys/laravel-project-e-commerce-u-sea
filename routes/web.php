@@ -5,6 +5,7 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SellerAuthController;
+use App\Http\Controllers\SellerCategoryController;
 use App\Http\Controllers\SellerDashboardController;
 use App\Http\Controllers\SellerProductController;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +27,7 @@ Route::post('/seller/logout', [SellerAuthController::class, 'logout'])->name('se
 Route::middleware(['seller.auth'])->prefix('seller')->name('seller.')->group(function () {
     Route::get('/dashboard', [SellerDashboardController::class, 'index'])->name('dashboard');
     Route::resource('/products', SellerProductController::class)->names('products');
+    Route::resource('/categories', SellerCategoryController::class)->names('categories');
 });
 
 // Keranjang

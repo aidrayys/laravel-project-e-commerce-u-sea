@@ -5,7 +5,9 @@
     $method = $isEdit ? 'PATCH' : 'POST';
     $product = $product ?? null;
 
-    $categories = [
+    // Load categories dynamically from the database so newly created categories appear.
+    $dbCategories = \App\Models\Category::orderBy('name')->pluck('name')->toArray();
+    $categories = array_values(array_unique(array_merge($dbCategories, [
         'Fresh Seafood',
         'Fish',
         'Shrimp',
@@ -14,7 +16,7 @@
         'Sambal',
         'Seafood Snacks',
         'Others',
-    ];
+    ])));
 
     $currentCategory = old('category', $product?->category);
     $isOtherCategory = $currentCategory && !in_array($currentCategory, $categories, true);

@@ -2,6 +2,36 @@
 
 @section('title', 'Seller Products')
 
+@push('styles')
+<style>
+    .product-table-thumb {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 0.5rem;
+        background-color: #e0f2fe;
+    }
+
+    .product-description-cell {
+        max-width: 300px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        line-height: 1.5;
+        color: var(--gray);
+        font-size: 0.9rem;
+    }
+
+    @media (max-width: 767px) {
+        .product-description-cell {
+            max-width: none;
+        }
+    }
+</style>
+@endpush
+
 @section('content')
     <div class="section-header">
         <h1 class="page-title" style="margin-bottom: 0;">Seller Products</h1>
@@ -12,28 +42,31 @@
         <table>
             <thead>
                 <tr>
-                    <th>Product</th>
-                    <th>Category</th>
-                    <th>Price</th>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Description</th>
                     <th>Stock</th>
+                    <th>Price</th>
+                    <th>Image</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($products as $product)
                     <tr>
-                        <td data-label="Product">
-                            <div class="cart-item">
-                                <img src="{{ asset($product->image) }}" alt="{{ $product->name }}" onerror="this.onerror=null;this.src='{{ asset('images/placeholder.svg') }}'">
-                                <div>
-                                    <strong>{{ $product->name }}</strong>
-                                    <div style="font-size: 0.875rem; color: var(--gray);">{{ $product->seller_name }}</div>
-                                </div>
-                            </div>
+                        <td data-label="ID">{{ $product->id }}</td>
+                        <td data-label="Name"><strong>{{ $product->name }}</strong></td>
+                        <td data-label="Description">
+                            <div class="product-description-cell">{{ $product->description }}</div>
                         </td>
-                        <td data-label="Category">{{ $product->category }}</td>
-                        <td data-label="Price">Rp {{ number_format($product->price, 0, ',', '.') }}</td>
                         <td data-label="Stock">{{ $product->stock }}</td>
+                        <td data-label="Price">Rp {{ number_format($product->price, 0, ',', '.') }}</td>
+                        <td data-label="Image">
+                            <img src="{{ asset($product->image ?? 'images/placeholder.svg') }}"
+                                 alt="{{ $product->name }}"
+                                 class="product-table-thumb"
+                                 onerror="this.onerror=null;this.src='{{ asset('images/placeholder.svg') }}'">
+                        </td>
                         <td data-label="Actions">
                             <div class="cart-actions-cell">
                                 <a href="{{ route('seller.products.edit', $product) }}" class="btn btn-outline btn-small">Edit</a>
