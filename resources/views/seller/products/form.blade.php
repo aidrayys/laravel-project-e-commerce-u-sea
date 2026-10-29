@@ -42,21 +42,33 @@
             <div class="form-group form-group-full">
                 <label for="name" class="form-label">Product Name</label>
                 <input type="text" id="name" name="name" class="form-input" value="{{ old('name', $product?->name) }}" required>
+                @error('name')
+                    <div class="validation-error">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="form-group form-group-full">
                 <label for="description" class="form-label">Description</label>
                 <textarea id="description" name="description" class="form-textarea" rows="4" required>{{ old('description', $product?->description) }}</textarea>
+                @error('description')
+                    <div class="validation-error">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="form-group">
                 <label for="price" class="form-label">Price (Rp)</label>
                 <input type="number" id="price" name="price" class="form-input" value="{{ $basePrice }}" min="0" required>
+                @error('price')
+                    <div class="validation-error">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="form-group">
                 <label for="stock" class="form-label">Stock</label>
                 <input type="number" id="stock" name="stock" class="form-input" value="{{ old('stock', $product?->stock) }}" min="0" required>
+                @error('stock')
+                    <div class="validation-error">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="form-group">
@@ -69,6 +81,9 @@
                         </option>
                     @endforeach
                 </select>
+                @error('category')
+                    <div class="validation-error">{{ $message }}</div>
+                @enderror
             </div>
 
             <div class="form-group">
@@ -80,12 +95,18 @@
                     @endif
                 </div>
                 <small class="form-hint">Accepted: JPG, PNG, GIF, WebP. Max 2MB.</small>
+                @error('image')
+                    <div class="validation-error">{{ $message }}</div>
+                @enderror
             </div>
         </div>
 
         <div class="form-group category-other-group {{ $isOtherCategory ? '' : 'hidden' }}" style="margin-top: 1rem;">
             <label for="category_other" class="form-label">Specify Category</label>
             <input type="text" id="category_other" name="category_other" class="form-input" value="{{ $otherCategoryValue }}" {{ $isOtherCategory ? 'required' : '' }}>
+            @error('category_other')
+                <div class="validation-error">{{ $message }}</div>
+            @enderror
         </div>
 
         <div class="promo-section">
@@ -100,6 +121,9 @@
                     <div class="form-group">
                         <label for="discount_percentage" class="form-label">Discount (%)</label>
                         <input type="number" id="discount_percentage" name="discount_percentage" class="form-input" value="{{ $discountPercentage }}" min="0" max="100">
+                        @error('discount_percentage')
+                            <div class="validation-error">{{ $message }}</div>
+                        @enderror
                     </div>
 
                     <div class="form-group">
