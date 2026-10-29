@@ -764,7 +764,7 @@
                     </li>
                     <li>
                         <span class="insight-bullet">3</span>
-                        <span><strong>{{ round(($customerStats['returning'] / $customerStats['total']) * 100) }}%</strong> pelanggan merupakan returning customers.</span>
+                        <span><strong>{{ $customerStats['total'] > 0 ? round(($customerStats['returning'] / $customerStats['total']) * 100) : 0 }}%</strong> pelanggan merupakan returning customers.</span>
                     </li>
                 </ul>
             </div>
