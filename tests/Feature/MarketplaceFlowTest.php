@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -13,6 +14,14 @@ class MarketplaceFlowTest extends TestCase
     {
         parent::setUp();
         $this->seed(\Database\Seeders\ProductSeeder::class);
+    }
+
+    protected function loginAsCustomer(): User
+    {
+        $user = User::factory()->create(['role' => 'customer']);
+        $this->actingAs($user);
+
+        return $user;
     }
 
     public function test_home_page_loads(): void
@@ -71,17 +80,22 @@ class MarketplaceFlowTest extends TestCase
 
     public function test_checkout_page_requires_cart(): void
     {
+        $this->loginAsCustomer();
+
         $response = $this->get('/checkout');
         $response->assertRedirect('/cart');
     }
 
     public function test_order_can_be_placed(): void
     {
+        $this->loginAsCustomer();
+
         $product = \App\Models\Product::first();
         $this->post("/cart/add/{$product->id}", ['quantity' => 1]);
 
         $response = $this->post('/checkout', [
             'customer_name' => 'Test User',
+            'customer_email' => 'test@example.com',
             'customer_phone' => '08123456789',
             'address' => 'Test Address',
         ]);
