@@ -605,16 +605,24 @@
     {{-- Summary Cards --}}
     <div class="summary-grid">
         <div class="summary-card">
+            <div class="summary-label">Total Products</div>
+            <div class="summary-value">{{ number_format($summary['total_products'] ?? 0, 0, ',', '.') }}</div>
+        </div>
+        <div class="summary-card clickable" onclick="openModal('clicksModal')">
+            <div class="summary-label">Total Product Clicks</div>
+            <div class="summary-value">{{ number_format($summary['total_product_clicks'] ?? 0, 0, ',', '.') }}</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">Total Categories</div>
+            <div class="summary-value">{{ number_format($summary['total_categories'] ?? 0, 0, ',', '.') }}</div>
+        </div>
+        <div class="summary-card">
             <div class="summary-label">Total Sales</div>
             <div class="summary-value">Rp {{ number_format($summary['total_sales'], 0, ',', '.') }}</div>
         </div>
         <div class="summary-card clickable" onclick="openModal('ordersModal')">
             <div class="summary-label">Total Orders</div>
             <div class="summary-value">{{ number_format($summary['total_orders'], 0, ',', '.') }}</div>
-        </div>
-        <div class="summary-card clickable" onclick="openModal('clicksModal')">
-            <div class="summary-label">Total Product Clicks</div>
-            <div class="summary-value">{{ number_format($summary['total_product_clicks'], 0, ',', '.') }}</div>
         </div>
         <div class="summary-card">
             <div class="summary-label">Average Order Value</div>
@@ -825,7 +833,7 @@
                             <div class="modal-list-title">{{ $product['name'] }}</div>
                             <div class="modal-list-meta">{{ $product['category'] }}</div>
                         </div>
-                        <div class="modal-list-badge">{{ number_format($product['clicks'], 0, ',', '.') }} klik</div>
+                        <div class="modal-list-badge">{{ number_format($product['click'] ?? $product['clicks'] ?? 0, 0, ',', '.') }} klik</div>
                     </div>
                 @empty
                     <div class="empty-state" style="padding: 2rem 1rem;">

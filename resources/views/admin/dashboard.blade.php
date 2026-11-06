@@ -17,19 +17,23 @@
     <div class="summary-grid">
         <div class="summary-card">
             <div class="summary-label">Users</div>
-            <div class="summary-value">{{ $stats['users'] }}</div>
+            <div class="summary-value">{{ number_format($stats['users'], 0, ',', '.') }}</div>
         </div>
         <div class="summary-card">
-            <div class="summary-label">Products</div>
-            <div class="summary-value">{{ $stats['products'] }}</div>
+            <div class="summary-label">Total Products</div>
+            <div class="summary-value">{{ number_format($stats['products'], 0, ',', '.') }}</div>
         </div>
         <div class="summary-card">
-            <div class="summary-label">Categories</div>
-            <div class="summary-value">{{ $stats['categories'] }}</div>
+            <div class="summary-label">Total Categories</div>
+            <div class="summary-value">{{ number_format($stats['categories'], 0, ',', '.') }}</div>
+        </div>
+        <div class="summary-card">
+            <div class="summary-label">Total Product Clicks</div>
+            <div class="summary-value">{{ number_format($stats['product_clicks'] ?? 0, 0, ',', '.') }}</div>
         </div>
         <div class="summary-card">
             <div class="summary-label">Orders</div>
-            <div class="summary-value">{{ $stats['orders'] }}</div>
+            <div class="summary-value">{{ number_format($stats['orders'], 0, ',', '.') }}</div>
         </div>
         <div class="summary-card">
             <div class="summary-label">Total Sales</div>

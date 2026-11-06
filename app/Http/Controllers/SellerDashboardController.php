@@ -7,23 +7,45 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class SellerDashboardController extends Controller
 {
     public function index(): View
     {
-        // KPIs from actual database
-        $totalProductClicks = Product::sum('clicks');
+        $sellerName = (string) session('seller_name', 'Pesisir Rasa');
+        $clickColumn = Schema::hasColumn('products', 'click') ? 'click' : 'clicks';
+
+        $sellerProductsQuery = Product::query()->where('seller_name', $sellerName);
+
+        // Required dashboard stats (actual database, scoped to seller when ownership is supported).
+        $totalProducts = (clone $sellerProductsQuery)->count();
+        $totalProductClicks = (int) ((clone $sellerProductsQuery)->sum($clickColumn) ?? 0);
+        $totalCategories = (int) ((clone $sellerProductsQuery)
+            ->whereNotNull('category')
+            ->where('category', '!=', '')
+            ->distinct()
+            ->count('category'));
+
+        // Existing marketplace KPIs kept intact.
         $totalOrders = Order::count();
-        $totalSales = Order::sum('total') ?? 0;
+        $totalSales = (int) (Order::sum('total') ?? 0);
         $averageOrderValue = (int) (Order::avg('total') ?? 0);
 
-        // Products with clicks detail
-        $clickedProducts = Product::where('clicks', '>', 0)
-            ->orderByDesc('clicks')
+        // Products with clicks detail (seller's products).
+        $clickedProducts = (clone $sellerProductsQuery)
+            ->where($clickColumn, '>', 0)
+            ->orderByDesc($clickColumn)
             ->limit(50)
-            ->get(['id', 'name', 'category', 'clicks', 'image'])
+            ->get(['id', 'name', 'category', $clickColumn, 'image'])
+            ->map(function ($product) use ($clickColumn) {
+                $data = $product->toArray();
+                $data['click'] = (int) ($data[$clickColumn] ?? 0);
+                $data['clicks'] = $data['click'];
+
+                return $data;
+            })
             ->toArray();
 
         // Recent orders for modal
@@ -110,8 +132,9 @@ class SellerDashboardController extends Controller
             })
             ->toArray();
 
-        // Stock alerts: products with low stock
-        $stockAlerts = Product::where('stock', '<=', 5)
+        // Stock alerts: products with low stock (seller's products).
+        $stockAlerts = (clone $sellerProductsQuery)
+            ->where('stock', '<=', 5)
             ->orderBy('stock')
             ->limit(5)
             ->get()
@@ -122,9 +145,11 @@ class SellerDashboardController extends Controller
             ->toArray();
 
         $summary = [
+            'total_products' => $totalProducts,
+            'total_product_clicks' => $totalProductClicks,
+            'total_categories' => $totalCategories,
             'total_sales' => $totalSales,
             'total_orders' => $totalOrders,
-            'total_product_clicks' => $totalProductClicks,
             'average_order_value' => $averageOrderValue,
         ];
 

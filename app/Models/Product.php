@@ -22,6 +22,7 @@ class Product extends Model
         'seller_name',
         'location',
         'rating',
+        'click',
         'clicks',
     ];
 
@@ -33,6 +34,7 @@ class Product extends Model
             'discount_percentage' => 'integer',
             'is_promo' => 'boolean',
             'stock' => 'integer',
+            'click' => 'integer',
             'clicks' => 'integer',
         ];
     }
