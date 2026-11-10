@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\CheckoutException;
 use App\Models\Order;
 use App\Models\OrderItem;
-use App\Models\Product;
-use App\Models\ProductVariant;
+use App\Models\User;
+use App\Services\CartService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,8 +14,11 @@ use Illuminate\View\View;
 
 class OrderController extends Controller
 {
+    public function __construct(private readonly CartService $cartService) {}
+
     /**
      * Tampilkan halaman checkout beserta ringkasan pesanan.
+     * Harga & stok selalu dihitung ulang dari database, bukan dari session.
      */
     public function checkout(Request $request): View|RedirectResponse
     {
@@ -24,40 +28,10 @@ class OrderController extends Controller
             return redirect()->route('cart.index')->with('error', 'Keranjang masih kosong. Silakan tambahkan produk terlebih dahulu.');
         }
 
-        $products = Product::whereIn('id', array_keys($cart))->get()->keyBy('id');
-        $items = [];
-        $subtotal = 0;
-        $discountTotal = 0;
+        $summary = $this->cartService->summarize($cart);
+        unset($summary['invalid']);
 
-        foreach ($cart as $id => $cartItem) {
-            $product = $products->get($id);
-
-            if (! $product) {
-                continue;
-            }
-
-            $itemSubtotal = $cartItem['price'] * $cartItem['quantity'];
-            $itemOriginalSubtotal = ($cartItem['original_price'] ?? $cartItem['price']) * $cartItem['quantity'];
-
-            $items[] = [
-                'product' => $product,
-                'quantity' => $cartItem['quantity'],
-                'price' => $cartItem['price'],
-                'original_price' => $cartItem['original_price'] ?? null,
-                'discount_percentage' => $cartItem['discount_percentage'] ?? null,
-                'weight' => $cartItem['weight'] ?? null,
-                'subtotal' => $itemSubtotal,
-                'saved' => max(0, $itemOriginalSubtotal - $itemSubtotal),
-            ];
-
-            $subtotal += $itemSubtotal;
-            $discountTotal += max(0, $itemOriginalSubtotal - $itemSubtotal);
-        }
-
-        $shipping = $subtotal >= 100000 ? 0 : 10000;
-        $total = $subtotal + $shipping;
-
-        /** @var \App\Models\User $user */
+        /** @var User $user */
         $user = auth()->user();
         $customerDefaults = [
             'customer_name' => $user->name,
@@ -67,14 +41,14 @@ class OrderController extends Controller
             'address' => old('address', $user->address ?? ''),
         ];
 
-        return view('checkout', array_merge(
-            compact('items', 'subtotal', 'discountTotal', 'shipping', 'total'),
-            $customerDefaults
-        ));
+        return view('checkout', array_merge($summary, $customerDefaults));
     }
 
     /**
      * Simpan pesanan beserta item-itemnya ke database.
+     *
+     * Alur: validasi input -> transaksi DB -> kunci baris produk/varian (lockForUpdate)
+     * -> cek stok -> simpan order & item dengan harga terkini -> kurangi stok -> commit.
      */
     public function store(Request $request): RedirectResponse
     {
@@ -92,83 +66,69 @@ class OrderController extends Controller
             return redirect()->route('cart.index')->with('error', 'Keranjang masih kosong.');
         }
 
-        $products = Product::whereIn('id', array_keys($cart))->get()->keyBy('id');
+        try {
+            $order = DB::transaction(function () use ($validated, $cart) {
+                // lockForUpdate() mengunci baris produk/varian sampai transaksi selesai,
+                // sehingga dua checkout bersamaan tidak bisa menjual stok yang sama.
+                $summary = $this->cartService->summarize($cart, lock: true);
 
-        // Periksa ketersediaan stok sebelum membuat pesanan.
-        foreach ($cart as $id => $cartItem) {
-            $product = $products->get($id);
+                if (! empty($summary['invalid'])) {
+                    throw new CheckoutException(reset($summary['invalid']));
+                }
 
-            if (! $product) {
-                return redirect()->route('cart.index')->with('error', 'Produk tidak ditemukan.');
-            }
+                foreach ($summary['items'] as $item) {
+                    if ($item['stock'] < $item['quantity']) {
+                        throw new CheckoutException(
+                            "Stok {$item['product']->name} tidak mencukupi. Stok tersedia: {$item['stock']}."
+                        );
+                    }
+                }
 
-            $stock = $cartItem['variant_id']
-                ? ProductVariant::where('id', $cartItem['variant_id'])->value('stock')
-                : $product->stock;
-
-            if ($stock < $cartItem['quantity']) {
-                return redirect()->route('cart.index')->with(
-                    'error',
-                    "Stok {$product->name} tidak mencukupi. Stok tersedia: {$stock}."
-                );
-            }
-        }
-
-        $order = DB::transaction(function () use ($validated, $cart, $products) {
-            $subtotal = 0;
-
-            foreach ($cart as $id => $cartItem) {
-                $subtotal += $cartItem['price'] * $cartItem['quantity'];
-            }
-
-            $shipping = $subtotal >= 100000 ? 0 : 10000;
-            $total = $subtotal + $shipping;
-
-            $order = Order::create([
-                'user_id' => auth()->id(),
-                'customer_name' => $validated['customer_name'],
-                'customer_email' => $validated['customer_email'],
-                'customer_phone' => $validated['customer_phone'],
-                'address' => $validated['address'],
-                'city' => $validated['customer_city'] ?? null,
-                'subtotal' => $subtotal,
-                'shipping' => $shipping,
-                'discount_total' => 0,
-                'total' => $total,
-                'status' => 'Pending',
-            ]);
-
-            foreach ($cart as $id => $cartItem) {
-                $product = $products->get($id);
-
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $product->id,
-                    'product_variant_id' => $cartItem['variant_id'] ?? null,
-                    'product_name' => $product->name,
-                    'weight' => $cartItem['weight'] ?? null,
-                    'price' => $cartItem['price'],
-                    'quantity' => $cartItem['quantity'],
-                    'subtotal' => $cartItem['price'] * $cartItem['quantity'],
+                $order = Order::create([
+                    'user_id' => auth()->id(),
+                    'customer_name' => $validated['customer_name'],
+                    'customer_email' => $validated['customer_email'],
+                    'customer_phone' => $validated['customer_phone'],
+                    'address' => $validated['address'],
+                    'city' => $validated['customer_city'] ?? null,
+                    'subtotal' => $summary['subtotal'],
+                    'shipping' => $summary['shipping'],
+                    // Subtotal sudah memakai harga setelah diskon, jadi discount_total
+                    // tetap 0 agar invoice (Subtotal - Diskon + Ongkir) tidak terpotong dua kali.
+                    'discount_total' => 0,
+                    'total' => $summary['total'],
+                    'status' => 'Pending',
                 ]);
 
-                if ($cartItem['variant_id']) {
-                    ProductVariant::where('id', $cartItem['variant_id'])->decrement('stock', $cartItem['quantity']);
-                } else {
-                    $product->decrement('stock', $cartItem['quantity']);
+                foreach ($summary['items'] as $item) {
+                    OrderItem::create([
+                        'order_id' => $order->id,
+                        'product_id' => $item['product']->id,
+                        'product_variant_id' => $item['variant']?->id,
+                        'product_name' => $item['product']->name,
+                        'weight' => $item['weight'],
+                        'price' => $item['price'],
+                        'quantity' => $item['quantity'],
+                        'subtotal' => $item['subtotal'],
+                    ]);
+
+                    // Kurangi stok pada sumber harga yang sama (varian atau produk).
+                    ($item['variant'] ?? $item['product'])->decrement('stock', $item['quantity']);
                 }
-            }
 
-            return $order;
-        });
+                $order->trackingEvents()->create([
+                    'status' => $order->status,
+                    'title' => 'Pesanan dibuat',
+                    'description' => 'Pesanan berhasil dibuat dan menunggu konfirmasi.',
+                    'event_at' => now(),
+                ]);
 
-        // Create initial tracking event
-        $order->trackingEvents()->create([
-            'status' => $order->status,
-            'title' => 'Pesanan dibuat',
-            'description' => 'Pesanan berhasil dibuat dan menunggu konfirmasi.',
-            'event_at' => now(),
-        ]);
+                return $order;
+            });
+        } catch (CheckoutException $e) {
+            // Transaksi sudah di-rollback otomatis; tidak ada stok yang berkurang.
+            return redirect()->route('cart.index')->with('error', $e->getMessage());
+        }
 
         session()->forget('cart');
 
@@ -176,7 +136,7 @@ class OrderController extends Controller
     }
 
     /**
-     * Tampilkan halaman konfirmasi pesanan.
+     * Tampilkan halaman konfirmasi pesanan (invoice).
      */
     public function show(Order $order): View
     {
@@ -211,7 +171,7 @@ class OrderController extends Controller
      */
     private function authorizeOrder(Order $order): void
     {
-        /** @var \App\Models\User|null $user */
+        /** @var User|null $user */
         $user = auth()->user();
 
         if ($user && $user->isAdmin()) {

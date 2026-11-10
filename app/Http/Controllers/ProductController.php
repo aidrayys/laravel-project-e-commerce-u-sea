@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
-use App\Models\ProductVariant;
+use App\Services\CartService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class ProductController extends Controller
@@ -20,8 +21,8 @@ class ProductController extends Controller
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('seller_name', 'like', "%{$search}%")
-                  ->orWhere('category', 'like', "%{$search}%");
+                    ->orWhere('seller_name', 'like', "%{$search}%")
+                    ->orWhere('category', 'like', "%{$search}%");
             });
         }
 
@@ -44,7 +45,7 @@ class ProductController extends Controller
         $product->increment('click');
 
         // Keep legacy `clicks` column in sync when present.
-        if (\Illuminate\Support\Facades\Schema::hasColumn($product->getTable(), 'clicks')) {
+        if (Schema::hasColumn($product->getTable(), 'clicks')) {
             $product->increment('clicks');
         }
 
@@ -56,49 +57,51 @@ class ProductController extends Controller
     /**
      * Tambahkan produk ke keranjang (session).
      */
-    public function addToCart(Request $request, Product $product): RedirectResponse
+    public function addToCart(Request $request, Product $product, CartService $cartService): RedirectResponse
     {
-        $variantId = $request->input('variant_id');
-        $variant = $variantId ? ProductVariant::find($variantId) : null;
+        $request->validate([
+            'quantity' => 'nullable|integer|min:1',
+            'variant_id' => 'nullable|integer',
+        ]);
 
-        $price = $variant ? $variant->price : $product->price;
-        $originalPrice = $variant ? $variant->original_price : $product->original_price;
-        $discountPercentage = $variant ? $variant->discount_percentage : $product->discount_percentage;
-        $stock = $variant ? $variant->stock : $product->stock;
-        $weight = $variant ? $variant->weight : null;
+        $variantId = $request->input('variant_id');
+        // Varian harus milik produk ini, mencegah manipulasi harga lewat variant_id produk lain.
+        $variant = $cartService->findVariantFor($product, $variantId);
+
+        if ($variantId && ! $variant) {
+            return redirect()->back()->with('error', 'Varian produk tidak valid.');
+        }
+
+        $pricing = $cartService->pricing($product, $variant);
+        $stock = $pricing['stock'];
 
         if ($stock < 1) {
             return redirect()->back()->with('error', "{$product->name} sedang tidak tersedia.");
         }
 
         $cart = session()->get('cart', []);
-        $quantity = (int) $request->input('quantity', 1);
+        $quantity = max(1, (int) $request->input('quantity', 1));
 
-        if ($quantity < 1) {
-            $quantity = 1;
-        }
-
-        if (isset($cart[$product->id])) {
+        // Jika varian berbeda dari yang sudah ada di keranjang, ganti item tersebut.
+        if (isset($cart[$product->id]) && ($cart[$product->id]['variant_id'] ?? null) === $variant?->id) {
             $cart[$product->id]['quantity'] += $quantity;
         } else {
             $cart[$product->id] = [
                 'name' => $product->name,
-                'price' => $price,
-                'original_price' => $originalPrice,
-                'discount_percentage' => $discountPercentage,
+                'price' => $pricing['price'],
+                'original_price' => $pricing['original_price'],
+                'discount_percentage' => $pricing['discount_percentage'],
                 'quantity' => $quantity,
                 'image' => $product->image,
                 'seller_name' => $product->seller_name,
                 'location' => $product->location,
-                'weight' => $weight,
+                'weight' => $pricing['weight'],
                 'variant_id' => $variant?->id,
             ];
         }
 
         // Pastikan jumlah tidak melebihi stok yang tersedia.
-        if ($cart[$product->id]['quantity'] > $stock) {
-            $cart[$product->id]['quantity'] = $stock;
-        }
+        $cart[$product->id]['quantity'] = min($cart[$product->id]['quantity'], $stock);
 
         session()->put('cart', $cart);
 
@@ -112,64 +115,32 @@ class ProductController extends Controller
     }
 
     /**
-     * Tampilkan halaman keranjang belanja.
+     * Tampilkan halaman keranjang belanja (harga dihitung ulang dari database).
      */
-    public function cart(Request $request): View
+    public function cart(CartService $cartService): View
     {
-        $cart = session()->get('cart', []);
-        $products = Product::whereIn('id', array_keys($cart))->get()->keyBy('id');
+        $summary = $cartService->summarize(session()->get('cart', []));
+        unset($summary['invalid']);
 
-        $items = [];
-        $subtotal = 0;
-        $discountTotal = 0;
-
-        foreach ($cart as $id => $cartItem) {
-            $product = $products->get($id);
-
-            if (! $product) {
-                continue;
-            }
-
-            $itemSubtotal = $cartItem['price'] * $cartItem['quantity'];
-            $itemOriginalSubtotal = ($cartItem['original_price'] ?? $cartItem['price']) * $cartItem['quantity'];
-
-            $items[] = [
-                'product' => $product,
-                'quantity' => $cartItem['quantity'],
-                'price' => $cartItem['price'],
-                'original_price' => $cartItem['original_price'] ?? null,
-                'discount_percentage' => $cartItem['discount_percentage'] ?? null,
-                'weight' => $cartItem['weight'] ?? null,
-                'subtotal' => $itemSubtotal,
-                'saved' => $itemOriginalSubtotal - $itemSubtotal,
-            ];
-
-            $subtotal += $itemSubtotal;
-            $discountTotal += max(0, $itemOriginalSubtotal - $itemSubtotal);
-        }
-
-        $shipping = $subtotal >= 100000 ? 0 : 10000;
-        $total = $subtotal + $shipping;
-
-        return view('cart', compact('items', 'subtotal', 'discountTotal', 'shipping', 'total'));
+        return view('cart', $summary);
     }
 
     /**
      * Perbarui jumlah produk di keranjang.
      */
-    public function updateCart(Request $request, Product $product): RedirectResponse
+    public function updateCart(Request $request, Product $product, CartService $cartService): RedirectResponse
     {
+        $request->validate(['quantity' => 'required|integer|min:0']);
+
         $cart = session()->get('cart', []);
-        $quantity = (int) $request->input('quantity', 1);
+        $quantity = (int) $request->input('quantity');
 
         if (! isset($cart[$product->id])) {
             return redirect()->route('cart.index')->with('error', 'Produk tidak ditemukan di keranjang.');
         }
 
-        $variantId = $cart[$product->id]['variant_id'] ?? null;
-        $stock = $variantId
-            ? ProductVariant::where('id', $variantId)->value('stock')
-            : $product->stock;
+        $variant = $cartService->findVariantFor($product, $cart[$product->id]['variant_id'] ?? null);
+        $stock = $cartService->pricing($product, $variant)['stock'];
 
         if ($quantity < 1) {
             unset($cart[$product->id]);

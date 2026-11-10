@@ -9,28 +9,25 @@ use Illuminate\View\View;
 
 class SellerProductController extends Controller
 {
-    private const SELLER_NAME = 'Pesisir Rasa';
-    private const SELLER_LOCATION = 'Lamongan';
-
     /**
      * Siapkan data produk sebelum disimpan.
      */
     private function prepareProductData(Request $request, array $validated, ?Product $product = null): array
     {
         // Kategori "Others" menggunakan input manual
-        if ($validated['category'] === 'Others' && !empty($validated['category_other'])) {
+        if ($validated['category'] === 'Others' && ! empty($validated['category_other'])) {
             $validated['category'] = $validated['category_other'];
         }
 
         // Seller info otomatis
-        $validated['seller_name'] = self::SELLER_NAME;
-        $validated['location'] = self::SELLER_LOCATION;
+        $validated['seller_name'] = config('seller.name');
+        $validated['location'] = config('seller.location');
 
         // Harga dan promo
         $basePrice = (int) $validated['price'];
         $isPromo = $request->boolean('is_promo');
 
-        if ($isPromo && !empty($validated['discount_percentage']) && $validated['discount_percentage'] > 0) {
+        if ($isPromo && ! empty($validated['discount_percentage']) && $validated['discount_percentage'] > 0) {
             $discount = (int) $validated['discount_percentage'];
             $discountedPrice = (int) round($basePrice - ($basePrice * $discount / 100));
 
@@ -47,14 +44,16 @@ class SellerProductController extends Controller
         // Upload gambar
         if ($request->hasFile('image')) {
             $directory = public_path('images/products');
-            if (!is_dir($directory)) {
+            if (! is_dir($directory)) {
                 mkdir($directory, 0755, true);
             }
 
             $file = $request->file('image');
-            $filename = time() . '_' . $file->getClientOriginalName();
+            // Nama file acak + ekstensi dari isi file (bukan nama asli dari klien)
+            // untuk mencegah nama file berbahaya atau bentrok.
+            $filename = $file->hashName();
             $file->move($directory, $filename);
-            $validated['image'] = 'images/products/' . $filename;
+            $validated['image'] = 'images/products/'.$filename;
         } elseif ($product) {
             // Pertahankan gambar lama saat edit jika tidak upload gambar baru
             unset($validated['image']);

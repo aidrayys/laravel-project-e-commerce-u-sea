@@ -2,9 +2,14 @@
 
 @section('title', 'Home')
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/home.css') }}?v={{ filemtime(public_path('css/home.css')) }}">
+@endpush
+
 @section('content')
-    {{-- Hero Carousel --}}
-    <section class="hero-carousel" aria-label="Promotional carousel">
+    {{-- Hero Carousel (2 kolom: teks + CTA di kiri, gambar di kanan) --}}
+    <div class="home-hero-wrap">
+    <section class="hero-carousel" aria-label="Promotional carousel" aria-roledescription="carousel">
         {{-- Slide 1 --}}
         <div class="hero-slide active">
             <div class="hero-slide-bg">
@@ -88,10 +93,11 @@
             <button type="button" class="hero-dot" onclick="showSlide(3); resetCarousel();" aria-label="Go to slide 4"></button>
         </div>
     </section>
+    </div>
 
-    {{-- Promo Section --}}
-    <section class="section">
-        <h2 class="section-title">Promo Hari Ini</h2>
+    {{-- Promo Section: langsung di bawah hero, terlihat di viewport awal desktop --}}
+    <section class="home-section home-section--promo" aria-labelledby="promo-title">
+        <h2 class="section-title" id="promo-title">Promo Hari Ini</h2>
         <div class="promo-grid">
             <div class="promo-card">
                 <div>
@@ -125,7 +131,7 @@
     </section>
 
     {{-- Products Section: heading, category filters, and product cards in one section --}}
-    <section class="section" id="products-section">
+    <section class="home-section" id="products-section">
         <h2 class="section-title">Yuk Pilih Ikan Segarmu!</h2>
 
         <div class="category-scroll" id="homeCategoryFilters" style="margin-bottom: 1.5rem;">
@@ -155,7 +161,7 @@
     </section>
 
     {{-- Value Proposition --}}
-    <section class="section">
+    <section class="home-section">
         <h2 class="section-title">Kenapa Belanja di U-Sea?</h2>
         <div class="value-grid">
             <div class="value-card">
@@ -190,7 +196,7 @@
     </section>
 
     {{-- Support Local Fishermen Story --}}
-    <section class="section" id="support-local">
+    <section class="home-section" id="support-local">
         <div class="support-section">
             <div class="support-content">
                 <h2>Your Purchase Supports Local Fishermen</h2>
@@ -220,6 +226,64 @@
 
 @push('scripts')
 <script>
+    // Hero carousel: auto-slide setiap 4,5 detik, berhenti saat kursor di atas carousel.
+    (function () {
+        const carousel = document.querySelector('.hero-carousel');
+        if (!carousel) return;
+
+        const slides = carousel.querySelectorAll('.hero-slide');
+        const dots = carousel.querySelectorAll('.hero-dot');
+        const slideDelay = 4500;
+        let currentSlide = 0;
+        let slideInterval = null;
+        let isHovered = false;
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => {
+                slide.classList.toggle('active', i === index);
+                slide.setAttribute('aria-hidden', i === index ? 'false' : 'true');
+            });
+            dots.forEach((dot, i) => dot.classList.toggle('active', i === index));
+            currentSlide = index;
+        }
+
+        function nextSlide() { showSlide((currentSlide + 1) % slides.length); }
+        function prevSlide() { showSlide((currentSlide - 1 + slides.length) % slides.length); }
+
+        function stopCarousel() {
+            clearInterval(slideInterval);
+            slideInterval = null;
+        }
+
+        // Selalu hentikan interval lama sebelum membuat yang baru,
+        // agar tidak ada dua interval yang berjalan bersamaan (slide jadi makin cepat).
+        function startCarousel() {
+            stopCarousel();
+            slideInterval = setInterval(nextSlide, slideDelay);
+        }
+
+        function resetCarousel() {
+            if (isHovered) {
+                stopCarousel();
+            } else {
+                startCarousel();
+            }
+        }
+
+        if (slides.length > 1) {
+            showSlide(0);
+            startCarousel();
+            carousel.addEventListener('mouseenter', () => { isHovered = true; stopCarousel(); });
+            carousel.addEventListener('mouseleave', () => { isHovered = false; startCarousel(); });
+        }
+
+        // Dipakai oleh atribut onclick tombol panah & titik navigasi.
+        window.nextSlide = nextSlide;
+        window.prevSlide = prevSlide;
+        window.showSlide = showSlide;
+        window.resetCarousel = resetCarousel;
+    })();
+
     document.addEventListener('DOMContentLoaded', function () {
         const filterContainer = document.getElementById('homeCategoryFilters');
         if (!filterContainer) return;
