@@ -13,7 +13,7 @@ class SellerCategoryTest extends TestCase
 
     protected function loginAsSeller(): void
     {
-        $this->post('/seller/login', ['username' => 'pesisirrasa', 'password' => '123'])
+        $this->post('/seller/login', ['username' => self::SELLER_USERNAME, 'password' => self::SELLER_PASSWORD])
             ->assertRedirect('/seller/dashboard');
     }
 

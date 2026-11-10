@@ -51,7 +51,7 @@ class ControllerAvailabilityTest extends TestCase
         $this->post('/seller/login', ['username' => 'wrong', 'password' => 'wrong'])
             ->assertRedirect();
 
-        $this->post('/seller/login', ['username' => 'pesisirrasa', 'password' => '123'])
+        $this->post('/seller/login', ['username' => self::SELLER_USERNAME, 'password' => self::SELLER_PASSWORD])
             ->assertRedirect('/seller/dashboard');
 
         $this->get('/seller/dashboard')->assertStatus(200)->assertViewIs('seller.dashboard');
@@ -61,7 +61,7 @@ class ControllerAvailabilityTest extends TestCase
 
     public function test_seller_product_controller_routes(): void
     {
-        $this->post('/seller/login', ['username' => 'pesisirrasa', 'password' => '123'])
+        $this->post('/seller/login', ['username' => self::SELLER_USERNAME, 'password' => self::SELLER_PASSWORD])
             ->assertRedirect('/seller/dashboard');
 
         $this->get('/seller/products')->assertStatus(200)->assertViewIs('seller.products.index');
@@ -75,7 +75,7 @@ class ControllerAvailabilityTest extends TestCase
 
     public function test_seller_can_create_product_without_promo(): void
     {
-        $this->post('/seller/login', ['username' => 'pesisirrasa', 'password' => '123'])
+        $this->post('/seller/login', ['username' => self::SELLER_USERNAME, 'password' => self::SELLER_PASSWORD])
             ->assertRedirect('/seller/dashboard');
 
         $response = $this->post('/seller/products', [
@@ -103,7 +103,7 @@ class ControllerAvailabilityTest extends TestCase
 
     public function test_seller_can_create_product_with_promo(): void
     {
-        $this->post('/seller/login', ['username' => 'pesisirrasa', 'password' => '123'])
+        $this->post('/seller/login', ['username' => self::SELLER_USERNAME, 'password' => self::SELLER_PASSWORD])
             ->assertRedirect('/seller/dashboard');
 
         $response = $this->post('/seller/products', [

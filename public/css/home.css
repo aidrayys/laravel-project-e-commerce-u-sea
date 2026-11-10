@@ -1,0 +1,396 @@
+/*
+ * U-Sea — Homepage styles (hero carousel, promo, value proposition).
+ * Dipisahkan dari layouts/app.blade.php karena hanya dipakai di beranda.
+ * Variabel warna (--navy, --ocean, dst.) didefinisikan di layout utama.
+ *
+ * Target tata letak desktop: hero (~330px) + "Promo Hari Ini" terlihat
+ * bersama di viewport awal 1366x768 tanpa scroll.
+ */
+
+/* ---------- Spacing beranda ---------- */
+.home-hero-wrap {
+    padding-top: 1rem;
+}
+
+.home-section {
+    padding: 1.5rem 0;
+}
+
+.home-section .section-title {
+    margin-bottom: 1rem;
+}
+
+.home-section--promo {
+    padding-top: 0;
+}
+
+/* ---------- Hero carousel ---------- */
+.hero-carousel {
+    position: relative;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+    background-color: var(--navy);
+    height: clamp(300px, 42vh, 340px);
+}
+
+.hero-slide {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 2rem;
+    padding: 1.75rem clamp(3.5rem, 6vw, 5rem);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.6s ease, visibility 0.6s ease;
+}
+
+.hero-slide.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.hero-slide-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    background: radial-gradient(circle at 80% 50%, rgba(24, 174, 229, 0.28) 0%, rgba(11, 31, 58, 0) 55%);
+}
+
+.hero-wave {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 200%;
+    height: 80px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ffffff' fill-opacity='0.08' d='M0,192L48,197.3C96,203,192,213,288,229.3C384,245,480,267,576,250.7C672,235,768,181,864,181.3C960,181,1056,235,1152,234.7C1248,235,1344,181,1392,154.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E") repeat-x;
+    background-size: 50% 100%;
+    animation: waveMove 12s linear infinite;
+}
+
+.hero-bubble {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.04));
+    animation: bubbleFloat 6s ease-in-out infinite;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 560px;
+}
+
+.hero-badge {
+    display: inline-block;
+    background-color: rgba(255, 255, 255, 0.15);
+    padding: 0.3rem 0.8rem;
+    border-radius: 9999px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--white);
+    margin-bottom: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.hero-title {
+    font-size: clamp(1.5rem, 2.6vw, 2.35rem);
+    font-weight: 800;
+    color: var(--white);
+    margin-bottom: 0.625rem;
+    line-height: 1.2;
+}
+
+.hero-text {
+    font-size: clamp(0.9rem, 1.1vw, 1.05rem);
+    color: rgba(255, 255, 255, 0.88);
+    margin-bottom: 1.25rem;
+    max-width: 480px;
+}
+
+.hero-cta {
+    background-color: var(--cyan);
+    color: var(--navy);
+    font-weight: 700;
+}
+
+.hero-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(24, 174, 229, 0.35);
+}
+
+.hero-visual {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    max-height: 270px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hero-visual img {
+    width: 100%;
+    height: 100%;
+    max-width: 440px;
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.35);
+    border: 3px solid rgba(255, 255, 255, 0.12);
+}
+
+.hero-controls {
+    position: absolute;
+    bottom: 0.875rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 3;
+}
+
+.hero-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.4);
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.hero-dot.active {
+    background-color: var(--cyan);
+    transform: scale(1.3);
+}
+
+.hero-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 3;
+    background-color: rgba(255, 255, 255, 0.12);
+    color: var(--white);
+    border: none;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-size: 1rem;
+}
+
+.hero-arrow:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+}
+
+.hero-arrow:focus-visible,
+.hero-dot:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: 2px;
+}
+
+.hero-arrow.prev { left: 0.875rem; }
+.hero-arrow.next { right: 0.875rem; }
+
+/* Tablet: gambar lebih kecil */
+@media (max-width: 1023px) {
+    .hero-slide {
+        gap: 1.25rem;
+        padding: 1.5rem 3.25rem;
+    }
+
+    .hero-visual {
+        max-height: 220px;
+    }
+}
+
+/* Mobile: konten bertumpuk, gambar jadi latar redup */
+@media (max-width: 767px) {
+    .hero-carousel {
+        height: 300px;
+    }
+
+    .hero-slide {
+        grid-template-columns: 1fr;
+        padding: 1.5rem 1.25rem 2.5rem;
+    }
+
+    .hero-visual {
+        position: absolute;
+        inset: 0;
+        max-height: none;
+        z-index: 1;
+    }
+
+    .hero-visual img {
+        max-width: none;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        opacity: 0.25;
+    }
+
+    .hero-arrow {
+        display: none;
+    }
+}
+
+/* Animasi */
+@keyframes waveMove {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+@keyframes bubbleFloat {
+    0%, 100% { transform: translateY(0) scale(1); opacity: 0.6; }
+    50% { transform: translateY(-14px) scale(1.08); opacity: 0.9; }
+}
+
+@keyframes fadeUp {
+    0% { opacity: 0; transform: translateY(14px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+.hero-slide.active .hero-badge { animation: fadeUp 0.5s ease forwards; }
+.hero-slide.active .hero-title { animation: fadeUp 0.5s ease 0.08s forwards; opacity: 0; }
+.hero-slide.active .hero-text { animation: fadeUp 0.5s ease 0.16s forwards; opacity: 0; }
+.hero-slide.active .hero-cta { animation: fadeUp 0.5s ease 0.24s forwards; opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ---------- Promo Hari Ini ---------- */
+.promo-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.875rem;
+}
+
+@media (min-width: 768px) {
+    .promo-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1rem;
+    }
+}
+
+.promo-card {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--ocean) 100%);
+    color: var(--white);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.125rem;
+    position: relative;
+    overflow: hidden;
+    min-height: 92px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.promo-card:nth-child(2) { background: linear-gradient(135deg, var(--coral) 0%, #fb923c 100%); }
+.promo-card:nth-child(3) { background: linear-gradient(135deg, #10b981 0%, #34d399 100%); }
+.promo-card:nth-child(4) { background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%); }
+
+.promo-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+}
+
+.promo-card > div {
+    position: relative;
+    z-index: 1;
+    padding-right: 2.5rem;
+}
+
+.promo-card h3 {
+    font-size: clamp(0.9rem, 1.1vw, 1.05rem);
+    font-weight: 800;
+    line-height: 1.25;
+    margin-bottom: 0.2rem;
+}
+
+.promo-card p {
+    font-size: 0.8125rem;
+    opacity: 0.92;
+    line-height: 1.35;
+}
+
+.promo-card svg {
+    position: absolute;
+    right: -0.25rem;
+    bottom: -0.25rem;
+    width: 4rem;
+    height: 4rem;
+    opacity: 0.18;
+}
+
+/* ---------- Value proposition ---------- */
+.value-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .value-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.value-card {
+    background-color: var(--white);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 1rem;
+    text-align: center;
+    box-shadow: var(--shadow);
+    border: 1px solid #f1f5f9;
+    transition: transform 0.2s;
+}
+
+.value-card:hover {
+    transform: translateY(-4px);
+}
+
+.value-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    margin: 0 auto 1rem;
+    background: linear-gradient(135deg, var(--seafoam) 0%, var(--light-blue) 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--ocean);
+}
+
+.value-icon svg {
+    width: 1.75rem;
+    height: 1.75rem;
+}
+
+.value-card h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.value-card p {
+    font-size: 0.875rem;
+    color: var(--gray);
+    line-height: 1.5;
+}
